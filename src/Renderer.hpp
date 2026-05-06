@@ -11,7 +11,7 @@ struct Vertex {
 struct Pixel {
     int x;
     int y;
-    float zinv;
+    float z;
     glm::vec3 pos3d;
 };
 
@@ -26,8 +26,8 @@ public:
 
 enum class DrawMode {
     Default,
+    Wireframe,
     Vertices,
-    WireFrame,
 };
 
 class Renderer {

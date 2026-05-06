@@ -10,7 +10,7 @@ void Renderer::DrawPolygon(const std::vector<Vertex>& vertices, Shader& shader, 
     case DrawMode::Vertices:
         for (auto& p : pixels) DrawPoint(p, shader);
         break;
-    case DrawMode::WireFrame:
+    case DrawMode::Wireframe:
         for (size_t i = 0; i < pixels.size(); i++) DrawLine(pixels[i], pixels[(i + 1) % pixels.size()], shader);
         break;
     default:
@@ -90,8 +90,8 @@ void Renderer::DrawPoint(Pixel point, Shader& shader) {
 
 std::vector<Pixel> Interpolate(Pixel a, Pixel b, int size) {
     std::vector<Pixel> points(size);
-    glm::vec3 position(a.x, a.y, a.zinv);
-    auto positionStep = glm::vec3(b.x - a.x, b.y - a.y, b.zinv - a.zinv) / float(glm::max(size - 1, 1));
+    glm::vec3 position(a.x, a.y, a.z);
+    auto positionStep = glm::vec3(b.x - a.x, b.y - a.y, b.z - a.z) / float(glm::max(size - 1, 1));
     glm::vec3 pos3d(a.pos3d);
     glm::vec3 pos3dStep = (b.pos3d - a.pos3d) / float(glm::max(size - 1, 1));
     for (int i = 0; i < size; i++) {
