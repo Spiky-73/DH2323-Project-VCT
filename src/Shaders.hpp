@@ -42,8 +42,7 @@ public:
     virtual Pixel VertexShader(const Vertex& vertex) final override;
     virtual void FragmentShader(const Pixel& pixel) final override;
 
-private:
-    float Visibility(glm::vec3 position);
+    static float Visibility(glm::vec3 position, Light* light, glm::vec3 bboxMin, glm::vec3 bboxMax, glm::ivec3 resolution, glm::vec4* voxels);
 
 public:
     int axis;

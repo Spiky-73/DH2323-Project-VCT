@@ -114,7 +114,7 @@ void ShadowShader::FragmentShader(const Pixel& pixel) {
     // Light has already been computer for that voxel
     if (shadowMap[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] != 0) return;
 
-    float v = Visibility(pixel.pos3d);
+    float v = Visibility(pixel.pos3d, light, bboxMin, bboxMax, resolution, voxels);
     shadowMap[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] = v;
     if (v == 0) {
         voxels[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] *= glm::vec4(0, 0, 0, 1);
@@ -126,7 +126,7 @@ void ShadowShader::FragmentShader(const Pixel& pixel) {
     }
 }
 
-float ShadowShader::Visibility(glm::vec3 position) {
+float ShadowShader::Visibility(glm::vec3 position, Light* light, glm::vec3 bboxMin, glm::vec3 bboxMax, glm::ivec3 resolution, glm::vec4* voxels) {
     auto start = (position - bboxMin) / (bboxMax - bboxMin) * glm::vec3(resolution);
     auto target = (light->position - bboxMin) / (bboxMax - bboxMin) * glm::vec3(resolution);
     auto delta = target - start;
@@ -189,7 +189,8 @@ void RenderShader::FragmentShader(const Pixel& pixel) {
 glm::vec3 RenderShader::DirectLight(const Pixel& pixel)
 {
     glm::ivec3 voxelPos((pixel.pos3d / pixel.z - bboxMin) / (bboxMax - bboxMin) * glm::vec3(voxelResolution));
-    float visibility = shadowMap[voxelPos.x + voxelResolution.x * voxelPos.y + voxelResolution.x * voxelResolution.y * voxelPos.z];
+    // float visibility = shadowMap[voxelPos.x + voxelResolution.x * voxelPos.y + voxelResolution.x * voxelResolution.y * voxelPos.z];
+    float visibility = ShadowShader::Visibility(pixel.pos3d / pixel.z, light, bboxMin, bboxMax, voxelResolution, voxels); // More accurate
     if (visibility == 0) return glm::vec3();
 
     auto r = light->position - pixel.pos3d / pixel.z;
@@ -198,5 +199,5 @@ glm::vec3 RenderShader::DirectLight(const Pixel& pixel)
 
 glm::vec3 RenderShader::IndirectLight(const Pixel& pixel)
 {
-    return glm::vec3(0.5,0.5,0.5);
+    return glm::vec3();
 }
