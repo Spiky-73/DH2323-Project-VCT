@@ -27,6 +27,7 @@ target_sources(DH2323Project
     src/Renderer.cpp
     src/utility.cpp
     src/Shaders.cpp
+    src/VoxelGrid.cpp
     vendor/SDL2Auxiliary/SDL2Auxiliary.cpp
   PUBLIC
     FILE_SET HEADERS
@@ -37,6 +38,7 @@ target_sources(DH2323Project
       src/utility.hpp
       src/Objects.hpp
       src/Shaders.hpp
+      src/VoxelGrid.hpp
 
 )
 

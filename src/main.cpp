@@ -53,9 +53,10 @@ RenderShader renderShader;
 
 PointLight ambiantLight{ glm::vec3(), glm::vec3(1, 1, 1), 0.5f };
 const int VOXEL_RESOLUTION = 16;
-glm::vec3 voxels[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION];
-bool isVoxel[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION];
+glm::vec3 voxelColors[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION];
+bool hasColor[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION];
 float shadowMap[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION]; // TODO replace by a real shadow map
+VoxelGrid voxels{ bboxMin, glm::ivec3(VOXEL_RESOLUTION, VOXEL_RESOLUTION, VOXEL_RESOLUTION), (bboxMax-bboxMin).x / VOXEL_RESOLUTION, hasColor, voxelColors };
 
 void SetupShaders() {
 	lab3Shader.camera = &camera;
@@ -64,31 +65,18 @@ void SetupShaders() {
 	lab3Shader.screen = sdlAux;
 	lab3Shader.depthBuffer = depthBuffer;
 
-	voxelizationShader.resolution = glm::ivec3(VOXEL_RESOLUTION, VOXEL_RESOLUTION, VOXEL_RESOLUTION);
-	voxelizationShader.isVoxel = isVoxel;
-	voxelizationShader.voxels = voxels;
-	voxelizationShader.bboxMin = bboxMin;
-	voxelizationShader.bboxMax = bboxMax;
+	voxelizationShader.voxels = &voxels;
 
-	shadowShader.resolution = glm::ivec3(VOXEL_RESOLUTION, VOXEL_RESOLUTION, VOXEL_RESOLUTION);
-	shadowShader.isVoxel = isVoxel;
-	shadowShader.voxels = voxels;
+	shadowShader.voxels = &voxels;
 	shadowShader.shadowMap = shadowMap;
 	shadowShader.light = &light;
-	shadowShader.bboxMin = bboxMin;
-	shadowShader.bboxMax = bboxMax;
-
 	voxelRenderShader.camera = &camera;
 	voxelRenderShader.screen = sdlAux;
 	voxelRenderShader.depthBuffer = depthBuffer;
 
 	renderShader.camera = &camera;
 	renderShader.light = &light;
-	renderShader.bboxMin = bboxMin;
-	renderShader.bboxMax = bboxMax;
-	renderShader.isVoxel = isVoxel;
-	renderShader.voxels = voxels;
-	renderShader.voxelResolution = glm::ivec3(VOXEL_RESOLUTION, VOXEL_RESOLUTION, VOXEL_RESOLUTION);
+	renderShader.voxels = &voxels;
 	renderShader.shadowMap = shadowMap;
 	renderShader.screen = sdlAux;
 	renderShader.depthBuffer = depthBuffer;
@@ -155,9 +143,9 @@ void DrawVoxels() {
 	for (size_t x = 0; x < VOXEL_RESOLUTION; x++) {
 		for (size_t y = 0; y < VOXEL_RESOLUTION; y++) {
 			for (size_t z = 0; z < VOXEL_RESOLUTION; z++) {
-				if (isVoxel[x + VOXEL_RESOLUTION * y + VOXEL_RESOLUTION * VOXEL_RESOLUTION * z]) {
+				if (hasColor[x + VOXEL_RESOLUTION * y + VOXEL_RESOLUTION * VOXEL_RESOLUTION * z]) {
 					glm::vec3 anchor = bboxMin + vs * glm::vec3(x, y, z);
-					voxelRenderShader.reflectance = voxels[x + VOXEL_RESOLUTION * y + VOXEL_RESOLUTION * VOXEL_RESOLUTION * z];
+					voxelRenderShader.reflectance = voxelColors[x + VOXEL_RESOLUTION * y + VOXEL_RESOLUTION * VOXEL_RESOLUTION * z];
 					renderer.DrawPolygon({ {anchor}, {anchor + glm::vec3(vs.x,0,0)}, {anchor + glm::vec3(vs.x, vs.y,0)}, {anchor + glm::vec3(0, vs.y,0)} }, voxelRenderShader, mode);
 					renderer.DrawPolygon({ {anchor}, {anchor + glm::vec3(0,vs.y,0)}, {anchor + glm::vec3(0, vs.y,vs.z)}, {anchor + glm::vec3(0, 0,vs.z)} }, voxelRenderShader, mode);
 					renderer.DrawPolygon({ {anchor}, {anchor + glm::vec3(0,0,vs.z)}, {anchor + glm::vec3(vs.x,0,vs.z)}, {anchor + glm::vec3(vs.x,0,0)} }, voxelRenderShader, mode);
@@ -191,7 +179,7 @@ void Draw()
 
 	// 2. Generated the voxels with the reflectance as the color by "rendering the scene" on an orthographic camera centered on one side of the grid
 	if (renderMode != RenderMode::DirectLight) {
-		for (size_t i = 0; i < VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION; i++) isVoxel[i] = false;
+		voxels.Clear();
 		for (const auto& t : triangles) {
 			auto nx = glm::abs(t.normal.x);
 			auto ny = glm::abs(t.normal.y);

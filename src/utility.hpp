@@ -15,4 +15,5 @@ std::vector<T> Interpolate(T a, T b, int size) {
     return points;
 }
 
-std::vector<glm::ivec2> Interpolate(glm::ivec2 a, glm::ivec2 b);
+std::vector<glm::ivec2> Interpolate(glm::ivec2 a, glm::ivec2 b, int size);
+std::vector<glm::ivec3> Interpolate(glm::ivec3 a, glm::ivec3 b, int size);

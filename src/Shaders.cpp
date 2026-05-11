@@ -29,22 +29,22 @@ void Lab3Shader::FragmentShader(const Pixel& pixel) {
 
 Pixel VoxelizationShader::VertexShader(const Vertex& vertex) {
     Pixel p;
-    auto position = (vertex.position - bboxMin) / (bboxMax - bboxMin) * glm::vec3(resolution);
+    auto voxel = voxels->VoxelPosition(vertex.position);
     switch (axis) {
     case 0:
-        p.x = position.y;
-        p.y = position.z;
-        p.z = position.x;
+        p.x = voxel.y;
+        p.y = voxel.z;
+        p.z = voxel.x;
         break;
     case 1:
-        p.x = position.z;
-        p.y = position.x;
-        p.z = position.y;
+        p.x = voxel.z;
+        p.y = voxel.x;
+        p.z = voxel.y;
         break;
     default:
-        p.x = position.x;
-        p.y = position.y;
-        p.z = position.z;
+        p.x = voxel.x;
+        p.y = voxel.y;
+        p.z = voxel.z;
         break;
     }
     p.pos3d = vertex.position;
@@ -52,29 +52,25 @@ Pixel VoxelizationShader::VertexShader(const Vertex& vertex) {
 }
 
 void VoxelizationShader::FragmentShader(const Pixel& pixel) {
-    glm::ivec3 position;
+    glm::ivec3 voxel;
     switch (axis) {
     case 0:
-        position = glm::ivec3(pixel.z, pixel.x, int(pixel.y));
+        voxel = glm::ivec3(pixel.z, pixel.x, pixel.y);
         break;
     case 1:
-        position = glm::ivec3(pixel.y, pixel.z, int(pixel.x));
+        voxel = glm::ivec3(pixel.y, pixel.z, pixel.x);
         break;
     default:
-        position = glm::ivec3(pixel.x, pixel.y, int(pixel.z));
+        voxel = glm::ivec3(pixel.x, pixel.y, pixel.z);
         break;
     }
-    if (position.x < 0 || position.x >= resolution.x) return;
-    if (position.y < 0 || position.y >= resolution.y) return;
-    if (position.z < 0 || position.z >= resolution.z) return;
-    if (isVoxel[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z]) return;
-    isVoxel[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] = true;
-    voxels[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] = reflectance; // TODO *visibility;
+    if (!voxels->IsVoxel(voxel) || voxels->HasColor(voxel)) return;
+    voxels->SetColor(voxel, reflectance);
 }
 
 Pixel ShadowShader::VertexShader(const Vertex& vertex) {
     Pixel p;
-    auto position = (vertex.position - bboxMin) / (bboxMax - bboxMin) * glm::vec3(resolution);
+    auto position = voxels->VoxelPosition(vertex.position);
     switch (axis) {
     case 0:
         p.x = position.y;
@@ -97,50 +93,47 @@ Pixel ShadowShader::VertexShader(const Vertex& vertex) {
 }
 
 void ShadowShader::FragmentShader(const Pixel& pixel) {
-    glm::ivec3 position;
+    glm::ivec3 voxel;
     switch (axis) {
     case 0:
-        position = glm::ivec3(pixel.z, pixel.x, int(pixel.y));
+        voxel = glm::ivec3(pixel.z, pixel.x, int(pixel.y));
         break;
     case 1:
-        position = glm::ivec3(pixel.y, pixel.z, int(pixel.x));
+        voxel = glm::ivec3(pixel.y, pixel.z, int(pixel.x));
         break;
     default:
-        position = glm::ivec3(pixel.x, pixel.y, int(pixel.z));
+        voxel = glm::ivec3(pixel.x, pixel.y, int(pixel.z));
         break;
     }
-    if (position.x < 0 || position.x >= resolution.x) return;
-    if (position.y < 0 || position.y >= resolution.y) return;
-    if (position.z < 0 || position.z >= resolution.z) return;
+    if (!voxels->IsVoxel(voxel)) return;
 
+    auto index = voxels->VoxelIndex(voxel);
     // Light has already been computer for that voxel
-    if (shadowMap[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] != 0) return;
+    if (shadowMap[index] != 0) return;
 
-    float v = Visibility(pixel.pos3d, light, bboxMin, bboxMax, resolution, isVoxel);
-    shadowMap[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] = v;
+    float v = Visibility(pixel.pos3d, light, voxels);
+    shadowMap[index] = v;
     if (v == 0) {
-        voxels[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] = glm::vec3();
+        voxels->SetColor(voxel, glm::vec3());
     }
     else {
         auto r = light->position - pixel.pos3d;
         auto directLight = light->intensity * light->color * v * glm::max(glm::dot(glm::normalize(r), normal), 0.f) / (4 * glm::pi<float>() * glm::length2(r));
-        voxels[position.x + resolution.x * position.y + resolution.x * resolution.y * position.z] *= directLight;
+        voxels->SetColor(voxel, voxels->Color(voxel) * directLight);
     }
 }
 
-float ShadowShader::Visibility(glm::vec3 position, PointLight* light, glm::vec3 bboxMin, glm::vec3 bboxMax, glm::ivec3 resolution, bool* isVoxel) {
-    auto start = (position - bboxMin) / (bboxMax - bboxMin) * glm::vec3(resolution);
-    auto target = (light->position - bboxMin) / (bboxMax - bboxMin) * glm::vec3(resolution);
+float ShadowShader::Visibility(glm::vec3 position, PointLight* light, VoxelGrid* voxels) {
+    auto start = voxels->VoxelPosition(position);
+    auto target = voxels->VoxelPosition(light->position);
     auto delta = target - start;
     int pixels = glm::max(glm::abs(delta.x), glm::max(glm::abs(delta.y), glm::abs(delta.z)));
     auto intersections = Interpolate(start, target, pixels);
 
     for (size_t i = 1; i < pixels; i++) {
         auto p = intersections[i];
-        if (p.x < 0 || p.x >= resolution.x) return 1;
-        if (p.y < 0 || p.y >= resolution.y) return 1;
-        if (p.z < 0 || p.z >= resolution.z) return 1;
-        if (isVoxel[int(p.x) + resolution.x * int(p.y) + resolution.x * resolution.y * int(p.z)]) return 0;
+        if (!voxels->IsVoxel(p)) return 1;
+        if (voxels->HasColor(p)) return 0;
     }
     return 1;
 }
@@ -187,9 +180,9 @@ void RenderShader::FragmentShader(const Pixel& pixel) {
 
 glm::vec3 RenderShader::DirectLight(const Pixel& pixel)
 {
-    glm::ivec3 voxelPos((pixel.pos3d / pixel.z - bboxMin) / (bboxMax - bboxMin) * glm::vec3(voxelResolution));
-    // float visibility = shadowMap[voxelPos.x + voxelResolution.x * voxelPos.y + voxelResolution.x * voxelResolution.y * voxelPos.z];
-    float visibility = ShadowShader::Visibility(pixel.pos3d / pixel.z, light, bboxMin, bboxMax, voxelResolution, isVoxel); // More accurate
+    auto voxelPos = voxels->VoxelPosition(pixel.pos3d / pixel.z);
+    // float visibility = shadowMap[voxels->VoxelIndex(voxelPos)];
+    float visibility = ShadowShader::Visibility(pixel.pos3d / pixel.z, light, voxels); // More accurate
     if (visibility == 0) return glm::vec3();
 
     auto r = light->position - pixel.pos3d / pixel.z;
@@ -212,29 +205,29 @@ float coneWeights[NUM_CONES]{ 0.25f, 0.15f, 0.15f, 0.15f, 0.15f, 0.15f };
 glm::vec3 RenderShader::IndirectLight(const Pixel& pixel) {
     glm::vec3 tangent = normal.y == 1 ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
     glm::mat3 faceRotation = glm::mat3(tangent, normal, glm::cross(tangent, normal));
-    
+
     glm::vec3 color;
     float ambiantOcclusion = 0;
-    auto voxelSize = ((bboxMax - bboxMin) / glm::vec3(voxelResolution)).x;
     float angle = glm::pi<float>() / 3 / 2;
     for (size_t i = 0; i < NUM_CONES; i++) {
         float occlusion;
-        color += coneWeights[i] * ConeTrace(pixel.pos3d / pixel.z, faceRotation * coneDirections[i], angle, &occlusion, voxelSize);
+        color += coneWeights[i] * ConeTrace(voxels, pixel.pos3d / pixel.z, faceRotation * coneDirections[i], angle, &occlusion);
         ambiantOcclusion += coneWeights[i] * occlusion;
     }
     return color * ambiantOcclusion;
 }
 
-glm::vec3 RenderShader::ConeTrace(glm::vec3 origin, glm::vec3 direction, float angle, float* occlusion, float voxelSize) {
+glm::vec3 RenderShader::ConeTrace(VoxelGrid* voxels, glm::vec3 origin, glm::vec3 direction, float angle, float* occlusion) {
     glm::vec3 color;
     *occlusion = 0;
-    float dist = voxelSize;
+    float dist = voxels->voxelSize;
     int steps = 0;
+    float tan = glm::tan(angle / 2);
     while (*occlusion < 0.95f && steps < 4) {
         auto pos = origin + direction * dist;
-        dist += 2 * glm::tan(angle / 2) * dist;
-        float lod = glm::log2(dist/voxelSize);
-        auto voxelColor = SampleVoxels(pos, lod);
+        dist += 2 * tan * dist;
+        float lod = glm::log2(dist / voxels->voxelSize);
+        auto voxelColor = SampleVoxels(voxels, pos, lod);
         color += glm::vec3(voxelColor) * (1 - *occlusion);
         *occlusion += (1 - *occlusion) * voxelColor.a;
         steps++;
@@ -242,29 +235,23 @@ glm::vec3 RenderShader::ConeTrace(glm::vec3 origin, glm::vec3 direction, float a
     return color;
 }
 
-glm::vec4 RenderShader::SampleVoxels(glm::vec3 position, float lod) {
-    auto voxelSize = (bboxMax - bboxMin) / glm::vec3(voxelResolution);
+glm::vec4 RenderShader::SampleVoxels(VoxelGrid* voxels, glm::vec3 position, float lod) {
     int size = std::pow(2, lod);
 
     glm::ivec3 orig;
-    if (size == 1) orig = ((position - bboxMin) / voxelSize);
-    else orig = ((position - bboxMin - voxelSize * (size / 2.f)) / voxelSize);
+    if (size == 1) orig = voxels->VoxelPosition(position);
+    else orig = voxels->VoxelPosition(position - voxels->voxelSize * (size / 2.f));
     int sampledVoxels = 0;
     glm::vec3 color;
     for (size_t dx = 0; dx < size; dx++) {
         for (size_t dy = 0; dy < size; dy++) {
             for (size_t dz = 0; dz < size; dz++) {
                 glm::ivec3 voxel = orig + glm::ivec3(dx, dy, dz);
-                if (voxel.x < 0 || voxel.x >= voxelResolution.x) continue;
-                if (voxel.y < 0 || voxel.y >= voxelResolution.y) continue;
-                if (voxel.z < 0 || voxel.z >= voxelResolution.z) continue;
-                if (!isVoxel[voxel.x + voxelResolution.x * voxel.y + voxelResolution.x * voxelResolution.y * voxel.z]) continue;
+                if (!voxels->IsVoxel(voxel) || !voxels->HasColor(voxel)) continue;;
                 sampledVoxels++;
-                color += voxels[voxel.x + voxelResolution.x * voxel.y + voxelResolution.x * voxelResolution.y * voxel.z];
+                color += voxels->Color(voxel);
             }
-
         }
-
     }
     if (sampledVoxels == 0) return glm::vec4();
     return glm::vec4(color / float(sampledVoxels), float(sampledVoxels) / (size * size * size));
