@@ -208,7 +208,7 @@ glm::vec3 RenderShader::IndirectLight(const Pixel& pixel) {
 
     glm::vec3 color;
     float ambiantOcclusion = 0;
-    float angle = glm::pi<float>() / 3 / 2;
+    float angle = glm::pi<float>() / 3 * coneAngleRatio;
     for (size_t i = 0; i < NUM_CONES; i++) {
         float occlusion;
         color += coneWeights[i] * ConeTrace(voxels, pixel.pos3d / pixel.z, faceRotation * coneDirections[i], angle, &occlusion);
@@ -225,8 +225,8 @@ glm::vec3 RenderShader::ConeTrace(VoxelGrid* voxels, glm::vec3 origin, glm::vec3
     float tan = glm::tan(angle / 2);
     while (*occlusion < 0.95f && steps < 4) {
         auto pos = origin + direction * dist;
-        dist += 2 * tan * dist;
         float lod = glm::log2(dist / voxels->voxelSize);
+        dist += 2 * tan * dist;
         auto voxelColor = SampleVoxels(voxels, pos, lod);
         color += glm::vec3(voxelColor) * (1 - *occlusion);
         *occlusion += (1 - *occlusion) * voxelColor.a;

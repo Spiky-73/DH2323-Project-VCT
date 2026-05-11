@@ -98,4 +98,6 @@ public:
     SDL2Aux* screen;
     float* depthBuffer; // 2D array
     LightingMode lightingMode;
+
+    float coneAngleRatio;
 };

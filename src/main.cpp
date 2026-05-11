@@ -83,6 +83,7 @@ void SetupShaders() {
 	renderShader.lightingMode = renderMode == RenderMode::VCT ? LightingMode::All :
 		renderMode == RenderMode::DirectLight ? LightingMode::Direct :
 		LightingMode::Indirect;
+	renderShader.coneAngleRatio = 1;
 }
 
 void Update(void) {
@@ -127,10 +128,23 @@ void Update(void) {
 	if (keystate[SDL_SCANCODE_4]) {
 		renderMode = RenderMode::InDirectLight;
 		renderShader.lightingMode = LightingMode::Indirect;
+		renderShader.coneAngleRatio = 0.5f;
 	}
 	if (keystate[SDL_SCANCODE_5]) {
 		renderMode = RenderMode::VCT;
 		renderShader.lightingMode = LightingMode::All;
+		renderShader.coneAngleRatio = 0.5f;
+	}
+	if (keystate[SDL_SCANCODE_6]) {
+		renderMode = RenderMode::InDirectLight;
+		renderShader.lightingMode = LightingMode::Indirect;
+		renderShader.coneAngleRatio = 1;
+	}
+	if (keystate[SDL_SCANCODE_7]) {
+		renderMode = RenderMode::VCT;
+		renderShader.lightingMode = LightingMode::All;
+		renderShader.coneAngleRatio = 1;
+		
 	}
 
 	if (keystate[SDL_SCANCODE_8]) mode = DrawMode::Default;
