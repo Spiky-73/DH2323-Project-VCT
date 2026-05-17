@@ -52,7 +52,7 @@ VoxelRenderShader voxelRenderShader;
 RenderShader renderShader;
 
 PointLight ambiantLight{ glm::vec3(), glm::vec3(1, 1, 1), 0.5f };
-const int VOXEL_RESOLUTION = 16;
+const int VOXEL_RESOLUTION = 32;
 glm::vec3 voxelColors[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION];
 bool hasColor[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION];
 float shadowMap[VOXEL_RESOLUTION * VOXEL_RESOLUTION * VOXEL_RESOLUTION]; // TODO replace by a real shadow map
@@ -84,6 +84,7 @@ void SetupShaders() {
 		renderMode == RenderMode::DirectLight ? LightingMode::Direct :
 		LightingMode::Indirect;
 	renderShader.coneAngleRatio = 1;
+	renderShader.useReflectance = true;
 }
 
 void Update(void) {
@@ -124,27 +125,31 @@ void Update(void) {
 	if (keystate[SDL_SCANCODE_3]) {
 		renderMode = RenderMode::DirectLight;
 		renderShader.lightingMode = LightingMode::Direct;
+		renderShader.useReflectance = true;
 	}
 	if (keystate[SDL_SCANCODE_4]) {
 		renderMode = RenderMode::InDirectLight;
 		renderShader.lightingMode = LightingMode::Indirect;
 		renderShader.coneAngleRatio = 0.5f;
+		renderShader.useReflectance = false;
 	}
 	if (keystate[SDL_SCANCODE_5]) {
 		renderMode = RenderMode::VCT;
 		renderShader.lightingMode = LightingMode::All;
 		renderShader.coneAngleRatio = 0.5f;
+		renderShader.useReflectance = true;
 	}
 	if (keystate[SDL_SCANCODE_6]) {
 		renderMode = RenderMode::InDirectLight;
 		renderShader.lightingMode = LightingMode::Indirect;
 		renderShader.coneAngleRatio = 1;
+		renderShader.useReflectance = false;
 	}
 	if (keystate[SDL_SCANCODE_7]) {
 		renderMode = RenderMode::VCT;
 		renderShader.lightingMode = LightingMode::All;
 		renderShader.coneAngleRatio = 1;
-		
+		renderShader.useReflectance = true;
 	}
 
 	if (keystate[SDL_SCANCODE_8]) mode = DrawMode::Default;

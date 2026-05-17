@@ -1,0 +1,57 @@
+vct:
+  type: Article
+  title: Voxel Cone Tracing Evaluation for Real-Time Applications
+  author:
+  - Alvar Trojenborg
+  - Filip Northman
+  date: 2024
+  url: https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1886204&dswid=3088
+  pages: 52
+git:
+  type: Repository
+  title: KEX-tracer
+  url:
+    value: https://github.com/FilipNorth/KEX-tracer/tree/Thesis-Result
+    date: 2026-05-15
+  author: FilipNorth
+cj-vct:
+  type: Repository
+  title: DH2323 Project VCT
+  url:
+    value: https://github.com/Spiky-73/DH2323-Project-VCT/settings
+    date: 2026-05-15
+  author: Spiky-73
+wiki-shadow:
+  type: Web
+  title: Shadow mapping
+  url: 
+    value: https://en.wikipedia.org/wiki/Shadow_mapping
+    date: 2026-05-15
+  publisher: Wikipedia
+  date: 2026-02-20
+yt-shadow:
+  type: Video
+  title: Interactive Graphics 16 - Shadow Mapping
+  url: 
+    value: https://www.youtube.com/watch?v=Jhopq2lkzMQ
+    date: 2026-05-15
+  publisher: Youtube
+  date: 2022-03-02
+  author: Cem Yuksel
+crassin:
+  type: Article
+  title: Interactive Indirect Illumination Using Voxel Cone Tracing
+  author:
+    - C. Crassin
+    - F. Neyret
+    - M. Sainz
+    - S. Green
+    - E. Eisemann
+  date: 2011
+  url: { value: https://research.nvidia.com/sites/default/files/pubs/2011-09_Interactive-Indirect-Illumination/GIVoxels-pg2011-authors.pdf, date: 2026-05-15 }
+  parent:
+    type: proceedings
+    title: Proc. Pacific Graphics
+    volume: 30
+    number: 7
+    date: 2011

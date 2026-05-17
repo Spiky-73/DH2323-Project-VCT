@@ -175,7 +175,7 @@ void RenderShader::FragmentShader(const Pixel& pixel) {
     glm::vec3 color;
     if (bool(lightingMode & LightingMode::Direct)) color += DirectLight(pixel);
     if (bool(lightingMode & LightingMode::Indirect)) color += IndirectLight(pixel);
-    screen->putPixel(pixel.x, pixel.y, color * reflectance);
+    screen->putPixel(pixel.x, pixel.y, useReflectance ? color * reflectance : color);
 }
 
 glm::vec3 RenderShader::DirectLight(const Pixel& pixel)
@@ -205,15 +205,20 @@ float coneWeights[NUM_CONES]{ 0.25f, 0.15f, 0.15f, 0.15f, 0.15f, 0.15f };
 glm::vec3 RenderShader::IndirectLight(const Pixel& pixel) {
     glm::vec3 tangent = normal.y == 1 ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
     glm::mat3 faceRotation = glm::mat3(tangent, normal, glm::cross(tangent, normal));
+    float angle = glm::pi<float>() / 3 * coneAngleRatio;
 
     glm::vec3 color;
     float ambiantOcclusion = 0;
-    float angle = glm::pi<float>() / 3 * coneAngleRatio;
     for (size_t i = 0; i < NUM_CONES; i++) {
         float occlusion;
         color += coneWeights[i] * ConeTrace(voxels, pixel.pos3d / pixel.z, faceRotation * coneDirections[i], angle, &occlusion);
         ambiantOcclusion += coneWeights[i] * occlusion;
     }
+
+    // size_t i = 0;
+    // float occlusion;
+    // auto color = ConeTrace(voxels, pixel.pos3d / pixel.z, faceRotation * coneDirections[i], angle, &occlusion);
+    // auto ambiantOcclusion = occlusion;
     return color * ambiantOcclusion;
 }
 
@@ -221,6 +226,7 @@ glm::vec3 RenderShader::ConeTrace(VoxelGrid* voxels, glm::vec3 origin, glm::vec3
     glm::vec3 color;
     *occlusion = 0;
     float dist = voxels->voxelSize;
+    origin += direction * voxels->voxelSize;
     int steps = 0;
     float tan = glm::tan(angle / 2);
     while (*occlusion < 0.95f && steps < 4) {
@@ -228,6 +234,7 @@ glm::vec3 RenderShader::ConeTrace(VoxelGrid* voxels, glm::vec3 origin, glm::vec3
         float lod = glm::log2(dist / voxels->voxelSize);
         dist += 2 * tan * dist;
         auto voxelColor = SampleVoxels(voxels, pos, lod);
+        // float power = voxelColor.a / (2 * glm::pi<float>() * (dist * dist));
         color += glm::vec3(voxelColor) * (1 - *occlusion);
         *occlusion += (1 - *occlusion) * voxelColor.a;
         steps++;

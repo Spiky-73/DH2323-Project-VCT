@@ -12,9 +12,11 @@ public:
     virtual void FragmentShader(const Pixel& pixel) final override;
 
 public:
+    // Per Triangle
     glm::vec3 normal;
     glm::vec3 reflectance;
-
+    
+    // Global
     Camera* camera;
     PointLight* light;
     PointLight* indirectLight;
@@ -28,9 +30,11 @@ public:
     virtual void FragmentShader(const Pixel& pixel) final override;
 
 public:
+    // Per Triangle
     int axis;
     glm::vec3 reflectance;
 
+    // Global
     VoxelGrid* voxels;
 };
 
@@ -42,9 +46,11 @@ public:
     static float Visibility(glm::vec3 position, PointLight* light, VoxelGrid* voxels);
 
 public:
+    // Per Triangle
     int axis;
     glm::vec3 normal;
 
+    // Global
     VoxelGrid* voxels;
     float* shadowMap;
     PointLight* light;
@@ -56,9 +62,11 @@ public:
     virtual void FragmentShader(const Pixel& pixel) final override;
 
 public:
+    // Per Triangle
     glm::vec3 normal;
     glm::vec3 reflectance;
 
+    // Global
     Camera* camera;
     SDL2Aux* screen;
     float* depthBuffer; // 2D array
@@ -87,17 +95,18 @@ private:
     static glm::vec4 SampleVoxels(VoxelGrid* voxels, glm::vec3 position, float lod);
 
 public:
+    // Per Triangle
     glm::vec3 normal;
     glm::vec3 reflectance;
 
+    // Global
     Camera* camera;
     PointLight* light;
-
     VoxelGrid* voxels;
     float* shadowMap;
     SDL2Aux* screen;
     float* depthBuffer; // 2D array
     LightingMode lightingMode;
-
     float coneAngleRatio;
+    bool useReflectance;
 };
